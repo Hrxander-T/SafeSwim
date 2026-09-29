@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>SafeSwim</title>
+<style>
+  :root{
+    --bg:#F4F7F9; --surface:#FFFFFF; --border:#E2E8E6;
+    --text:#10231F; --text-2:#5B6B69; --text-3:#8A9997;
+    --accent:#0E7C7B; --accent-tint:#E6F1F0;
+    --danger:#D93025; --danger-bg:#3B0F0C; --danger-tint:#F2A69E;
+    --success:#1E8E5A; --success-bg:#E9F6EF; --success-border:#BFE6CE;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0b0b0b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  #phone{
+    max-width:420px;margin:0 auto;min-height:100vh;background:var(--bg);
+    position:relative;overflow:hidden;
+  }
+  .screen{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:24px 24px 40px;background:var(--bg);
+  }
+  .screen.active{display:flex}
+  a,button{text-decoration:none;font-family:inherit}
+  button{cursor:pointer;border:none;background:none;font-size:inherit;color:inherit}
+  .btn-primary{
+    display:block;width:100%;padding:16px;border-radius:14px;
+    background:var(--accent);color:#fff;font-size:16px;font-weight:600;text-align:center;
+  }
+  .btn-primary:active{opacity:0.85}
+  .btn-secondary{
+    display:block;width:100%;padding:14px;border-radius:14px;
+    background:#fff;color:var(--danger);font-size:14px;font-weight:600;
+    text-align:center;border:1px solid #F0C9C5;
+  }
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px}
+  .icon-btn{
+    width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .row{display:flex;align-items:center;gap:14px}
+  .grow{flex-grow:1}
+  .spacer{flex-grow:1}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .pulse-ring{
+    position:absolute;width:96px;height:96px;border-radius:50%;
+    border:2px solid var(--danger-tint);box-sizing:border-box;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .pulse-ring{animation:pulse 1.6s ease-out infinite}
+  }
+  @keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+  .badge{font-size:12px;font-weight:600;color:var(--success)}
+  .avatar{
+    width:40px;height:40px;border-radius:50%;background:var(--accent-tint);
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;
+    color:var(--accent);flex-shrink:0;
+  }
+  .toast{
+    position:absolute;left:24px;right:24px;bottom:24px;background:#10231F;color:#fff;
+    padding:12px 16px;border-radius:12px;font-size:13px;text-align:center;opacity:0;
+    transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<div id="phone">
+
+  <!-- HOME -->
+  <section class="screen active" data-screen="home" style="justify-content:space-between">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;margin-top:96px">
+      <div style="width:88px;height:88px;border-radius:24px;background:var(--accent);display:flex;align-items:center;justify-content:center">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#F4F7F9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3"></path></svg>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:600;color:var(--text)">SafeSwim</div>
+        <div style="font-size:15px;color:var(--text-2);margin-top:6px">Drowning detection armband</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;align-items:center">
+      <div style="font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:6px">
+        <span class="dot" id="home-status-dot" style="background:#C0392B"></span>
+        <span id="home-status-text">Not paired</span>
+      </div>
+      <input id="esp-ip" placeholder="ESP32 IP e.g. 192.168.1.42" value="192.168.1.42"
+        style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);font-size:14px;background:#fff">
+      <button class="btn-primary" onclick="app.connect()">Connect device</button>
+      <button style="font-size:13px;color:var(--text-2);text-decoration:underline" onclick="app.connectDemo()">Skip &amp; use demo data</button>
+    </div>
+  </section>
+
+  <!-- CONNECT -->
+  <section class="screen" data-screen="connect">
+    <div class="row" style="margin-bottom:28px">
+      <button class="icon-btn" onclick="app.go('home')" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10231F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </button>
+      <div style="font-size:18px;font-weight:600;color:var(--text)">Connect to armband</div>
+    </div>
+    <div style="font-size:14px;color:var(--text-2);margin-bottom:18px" id="connect-status">Searching for device via WiFi (WebSocket)…</div>
+    <div class="card row" style="margin-bottom:14px">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a15 15 0 0 1 20 0M5 15.5a10 10 0 0 1 14 0M8.5 19a5 5 0 0 1 7 0"></path><circle cx="12" cy="21.5" r="0.8" fill="#0E7C7B" stroke="none"></circle></svg>
+      </div>
+      <div class="grow">
+        <div style="font-size:15px;font-weight:600;color:var(--text)">SafeSwim Band</div>
+        <div style="font-size:13px;color:var(--text-2)" id="connect-detail">Connecting…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="screen" data-screen="dashboard" style="gap:20px">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div style="font-size:20px;font-weight:600;color:var(--text)">Live monitoring</div>
+        <div class="row" style="font-size:13px;color:var(--success);margin-top:4px;gap:6px">
+          <span class="dot" style="background:var(--success)"></span>
+          <span id="dash-status">Connected · SafeSwim Band</span>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="app.disconnect()" aria-label="Disconnect">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6B69" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D93025" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2.4 4 6.2 4c2 0 3.5 1 5.8 3.4C14.3 5 15.8 4 17.8 4c3.8 0 5.9 4.1 4.2 7.7C19.5 16.4 12 21 12 21z"></path></svg>
+        <div style="font-size:30px;font-weight:600;color:var(--text)"><span id="val-hr">--</span> <span style="font-size:14px;font-weight:400;color:var(--text-2)">bpm</span></div>
+        <div style="font-size:13px;color:var(--text-2)">Pulse</div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c3 4 6 7.5 6 11.5A6 6 0 0 1 6 13.5C6 9.5 9 6 12 2z"></path></svg>
+        <div style="font-size:30px;font-weight:600;color:var(--text)"><span id="val-spo2">--</span><span style="font-size:14px;font-weight:400;color:var(--text-2)">%</span></div>
+        <div style="font-size:13px;color:var(--text-2)">SpO2</div>
+      </div>
+    </div>
+    <div class="card row">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"></path></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)" id="val-motion">Active — swim motion detected</div>
+        <div style="font-size:13px;color:var(--text-2)" id="val-submersion">Not submerged</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-secondary" onclick="app.simulateAlarm()">Simulate alarm (demo)</button>
+  </section>
+
+  <!-- EMERGENCY -->
+  <section class="screen" data-screen="emergency" style="align-items:center;padding-top:64px;gap:22px;background:var(--danger-bg)">
+    <div style="position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div class="pulse-ring"></div>
+      <div style="width:88px;height:88px;border-radius:50%;background:var(--danger);display:flex;align-items:center;justify-content:center">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:22px;font-weight:600;color:#fff">Possible drowning detected</div>
+      <div style="font-size:14px;color:var(--danger-tint);margin-top:8px" id="emg-detail">Submerged with no swim motion for 9s</div>
+    </div>
+    <div style="width:100%;background:rgba(255,255,255,.08);border-radius:16px;padding:18px;display:flex;justify-content:space-around">
+      <div style="text-align:center">
+        <div style="font-size:22px;font-weight:600;color:#fff"><span id="emg-hr">61</span> <span style="font-size:12px;font-weight:400;color:var(--danger-tint)">bpm</span></div>
+        <div style="font-size:12px;color:var(--danger-tint);margin-top:4px">Pulse falling</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:22px;font-weight:600;color:#fff"><span id="emg-spo2">91</span><span style="font-size:12px;font-weight:400;color:var(--danger-tint)">%</span></div>
+        <div style="font-size:12px;color:var(--danger-tint);margin-top:4px">SpO2 falling</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;width:100%">
+      <button class="btn-primary" style="background:#fff;color:var(--danger)" onclick="app.notifyContacts()">Notify contacts now</button>
+      <button class="btn-secondary" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)" onclick="app.dismissAlarm()">I'm OK, dismiss</button>
+    </div>
+  </section>
+
+  <!-- CONTACTS -->
+  <section class="screen" data-screen="contacts" style="gap:18px">
+    <div style="font-size:20px;font-weight:600;color:var(--text)">Notifying contacts</div>
+    <div class="row" style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:14px;padding:14px 16px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E8E5A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+      <div style="font-size:13px;color:var(--success);font-weight:600">Lifeguard notified via SMS</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px" id="contacts-list">
+      <div class="card row"><div class="avatar">RS</div><div class="grow"><div style="font-size:15px;font-weight:600;color:var(--text)">Rafiq Shafat</div><div style="font-size:12px;color:var(--text-2)">Emergency contact · Call</div></div><div class="badge">Sent</div></div>
+      <div class="card row"><div class="avatar">NH</div><div class="grow"><div style="font-size:15px;font-weight:600;color:var(--text)">Nusrat Hossain</div><div style="font-size:12px;color:var(--text-2)">Emergency contact · SMS</div></div><div class="badge">Sent</div></div>
+      <div class="card row"><div class="avatar">LG</div><div class="grow"><div style="font-size:15px;font-weight:600;color:var(--text)">Pool lifeguard station</div><div style="font-size:12px;color:var(--text-2)">GSM · SMS via SIM800L</div></div><div class="badge">Sent</div></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-primary" onclick="app.go('dashboard')">Back to dashboard</button>
+  </section>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/*
+  SafeSwim front end — single-file, no build step required.
+  Two ways to run it:
+    1. Standalone demo: open this file in any browser, tap "Skip & use demo data".
+       Random telemetry is generated client-side and the alarm can be fired manually
+       or automatically when simulated SpO2/motion cross thresholds.
+    2. Live device: flash this file to the ESP32's LittleFS/SPIFFS filesystem and
+       serve it from the ESP32's own web server. Enter the ESP32's IP (or use the
+       default mDNS/AP address) and tap "Connect device" — it opens a WebSocket to
+       ws://<ip>/ws and expects JSON messages from the firmware:
+         {"type":"telemetry","hr":86,"spo2":98,"motion":"active","submerged":false}
+         {"type":"alarm","hr":61,"spo2":91,"reason":"submerged_no_motion"}
+         {"type":"cleared"}
+       and sends back:
+         {"type":"ack"}      when the user dismisses an alarm ("I'm OK")
+         {"type":"notify"}   when the user taps "Notify contacts now"
+           (firmware then triggers the SIM800L SMS / WiFi push as designed)
+*/
+const app = {
+  ws: null,
+  demoTimer: null,
+  screen: 'home',
+
+  go(name){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.screen[data-screen="${name}"]`).classList.add('active');
+    this.screen = name;
+  },
+
+  toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  },
+
+  // ---- Live device connection ----
+  connect(){
+    const ip = document.getElementById('esp-ip').value.trim();
+    if(!ip){ this.toast('Enter the ESP32 IP address first'); return; }
+    this.go('connect');
+    document.getElementById('connect-status').textContent = `Connecting to ${ip} over WiFi…`;
+    document.getElementById('connect-detail').textContent = 'Opening WebSocket…';
+
+    try{
+      this.ws = new WebSocket(`ws://${ip}/ws`);
+    }catch(e){
+      this.onConnectFailed();
+      return;
+    }
+
+    const failTimer = setTimeout(() => this.onConnectFailed(), 6000);
+
+    this.ws.onopen = () => {
+      clearTimeout(failTimer);
+      document.getElementById('connect-detail').textContent = 'Connected';
+      document.getElementById('home-status-dot').style.background = '#1E8E5A';
+      document.getElementById('home-status-text').textContent = 'Paired';
+      document.getElementById('dash-status').textContent = 'Connected · SafeSwim Band';
+      setTimeout(() => this.go('dashboard'), 400);
+    };
+
+    this.ws.onmessage = (evt) => {
+      let msg;
+      try{ msg = JSON.parse(evt.data); }catch(e){ return; }
+      this.handleMessage(msg);
+    };
+
+    this.ws.onclose = () => {
+      this.toast('Device disconnected');
+      document.getElementById('home-status-dot').style.background = '#C0392B';
+      document.getElementById('home-status-text').textContent = 'Not paired';
+    };
+
+    this.ws.onerror = () => { /* onclose will also fire */ };
+  },
+
+  onConnectFailed(){
+    document.getElementById('connect-detail').textContent = 'Could not reach device';
+    this.toast('Connection failed — check the IP or try demo data');
+    setTimeout(() => this.go('home'), 1200);
+  },
+
+  handleMessage(msg){
+    if(msg.type === 'telemetry'){
+      this.updateTelemetry(msg);
+    }else if(msg.type === 'alarm'){
+      this.showAlarm(msg);
+    }else if(msg.type === 'cleared'){
+      if(this.screen === 'emergency') this.go('dashboard');
+    }
+  },
+
+  send(obj){
+    if(this.ws && this.ws.readyState === WebSocket.OPEN){
+      this.ws.send(JSON.stringify(obj));
+    }
+  },
+
+  disconnect(){
+    if(this.ws){ this.ws.close(); this.ws = null; }
+    if(this.demoTimer){ clearInterval(this.demoTimer); this.demoTimer = null; }
+    document.getElementById('home-status-dot').style.background = '#C0392B';
+    document.getElementById('home-status-text').textContent = 'Not paired';
+    this.go('home');
+  },
+
+  // ---- Demo mode (no hardware needed) ----
+  connectDemo(){
+    this.go('connect');
+    document.getElementById('connect-status').textContent = 'Using simulated demo data';
+    document.getElementById('connect-detail').textContent = 'Generating sample telemetry…';
+    document.getElementById('home-status-dot').style.background = '#1E8E5A';
+    document.getElementById('home-status-text').textContent = 'Paired (demo)';
+    document.getElementById('dash-status').textContent = 'Connected · SafeSwim Band (demo)';
+    setTimeout(() => {
+      this.go('dashboard');
+      this.demoTimer = setInterval(() => {
+        const hr = 78 + Math.round(Math.random() * 14);
+        const spo2 = 96 + Math.round(Math.random() * 3);
+        this.updateTelemetry({ hr, spo2, motion: 'active', submerged: false });
+      }, 2000);
+    }, 700);
+  },
+
+  updateTelemetry(msg){
+    if(msg.hr != null) document.getElementById('val-hr').textContent = msg.hr;
+    if(msg.spo2 != null) document.getElementById('val-spo2').textContent = msg.spo2;
+    if(msg.motion != null){
+      document.getElementById('val-motion').textContent =
+        msg.motion === 'active' ? 'Active — swim motion detected' : 'Still — no motion detected';
+    }
+    if(msg.submerged != null){
+      document.getElementById('val-submersion').textContent =
+        msg.submerged ? 'Submerged' : 'Not submerged';
+    }
+  },
+
+  simulateAlarm(){
+    this.showAlarm({ hr: 61, spo2: 91, reason: 'submerged_no_motion' });
+  },
+
+  showAlarm(msg){
+    if(this.demoTimer){ clearInterval(this.demoTimer); this.demoTimer = null; }
+    document.getElementById('emg-hr').textContent = msg.hr ?? '--';
+    document.getElementById('emg-spo2').textContent = msg.spo2 ?? '--';
+    document.getElementById('emg-detail').textContent =
+      msg.reason === 'submerged_no_motion'
+        ? 'Submerged with no swim motion for 9s'
+        : 'Vitals anomaly detected while submerged';
+    this.go('emergency');
+    if(navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+  },
+
+  dismissAlarm(){
+    this.send({ type: 'ack' });
+    this.toast('Alarm dismissed');
+    this.go('dashboard');
+    if(this.ws && this.ws.readyState === WebSocket.OPEN){
+      // live device resumes pushing telemetry on its own
+    }else{
+      this.demoTimer = setInterval(() => {
+        const hr = 78 + Math.round(Math.random() * 14);
+        const spo2 = 96 + Math.round(Math.random() * 3);
+        this.updateTelemetry({ hr, spo2, motion: 'active', submerged: false });
+      }, 2000);
+    }
+  },
+
+  notifyContacts(){
+    this.send({ type: 'notify' });
+    this.go('contacts');
+  }
+};
+</script>
+</body>
+</html>
